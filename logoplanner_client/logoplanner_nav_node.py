@@ -40,7 +40,7 @@ class LogoPlannerNavNode(Node):
         super().__init__('logoplanner_nav_node')
 
         # ─── ROS パラメータ宣言 ───
-        self.declare_parameter('server_host', '192.168.11.13')
+        self.declare_parameter('server_host', 'localhost')
         self.declare_parameter('server_port', 19999)
 
         # サーバータイプ: "realworld" or "simulation"

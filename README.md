@@ -54,7 +54,11 @@ ros2 launch astra_camera astra_pro.launch.xml
 ### 2. LoGoPlanner ナビゲーションノード起動
 
 ```bash
+# デフォルト設定 (localhost) で起動
 ros2 launch logoplanner_client logoplanner_nav.launch.py
+
+# サーバーIPを指定する場合
+ros2 launch logoplanner_client logoplanner_nav.launch.py server_host:=192.168.1.100
 ```
 
 ### 3. ゴールを送信（Action）
@@ -100,7 +104,7 @@ ros2 action send_goal /navigate_to_goal logoplanner_client/action/NavigateToGoal
 
 | パラメータ | デフォルト | 説明 |
 |---|---|---|
-| `server_host` | `192.168.11.13` | LoGoPlanner サーバーの IP |
+| `server_host` | `localhost` | LoGoPlanner サーバーの IP |
 | `server_port` | `19999` | サーバーのポート番号 |
 | `server_type` | `realworld` | `realworld` (cmd_list) / `simulation` (trajectory) |
 | `goal_x` | `1.0` | ゴール x [m] (前方が +x) |
@@ -139,7 +143,7 @@ omega = kp_w * dy + kp_theta * dtheta
 
 ## 前提条件
 
-- LoGoPlanner サーバーが `192.168.11.13:19999` で起動済みであること
+- LoGoPlanner サーバーが起動済みであること（`server_host` パラメータで指定）
 - astra_camera ノードが RGB-D 画像を配信していること
 
 ## 注意事項
