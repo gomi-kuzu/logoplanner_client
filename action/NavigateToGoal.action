@@ -1,0 +1,14 @@
+# Goal: 目標座標 (ロボット座標系)
+float32 goal_x  # 前方方向 [m]
+float32 goal_y  # 左方向 [m]
+---
+# Result: ナビゲーション結果
+bool success
+string message
+float32 final_distance  # 最終的なゴールまでの距離 [m]
+---
+# Feedback: 進捗情報
+float32 distance_to_goal   # 現在のゴールまでの推定距離 [m]
+float32 elapsed_time       # 経過時間 [s]
+float32 current_x          # 現在の相対位置 x [m] (オドメトリがあれば)
+float32 current_y          # 現在の相対位置 y [m]

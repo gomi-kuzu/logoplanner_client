@@ -1,0 +1,43 @@
+# LoGoPlanner Navigation Node - デフォルトパラメータ
+logoplanner_nav_node:
+  ros__parameters:
+    # ─── サーバー接続 ───
+    server_host: "localhost"
+    server_port: 19999
+
+    # ─── サーバータイプ ───
+    # "realworld"   : logoplanner_realworld_server (MPC計算済みの cmd_list を返す)
+    # "simulation"  : logoplanner_server (trajectory を返す、クライアント側でP制御)
+    server_type: "realworld"
+
+    # ─── ゴール座標 (ロボット座標系 [m]) ───
+    goal_x: 1.0
+    goal_y: 0.0
+
+    # ─── 停止判定 ───
+    stop_threshold: -3.0
+
+    # ─── P制御ゲイン ───
+    kp_v: 1.0        # 線速度 (dx → vx)
+    kp_w: 1.0        # 横ずれ (dy → vy or omega)
+    kp_theta: 1.0    # 角度差 (dtheta → omega)
+
+    # ─── 速度リミット [m/s, rad/s] ───
+    max_linear_x: 0.5
+    max_linear_y: 0.5
+    max_angular_z: 1.0
+
+    # ─── ロボットタイプ ───
+    # "holonomic"    : メカナム等の全方位 (vx, vy, wz)
+    # "differential" : 差動二輪 (vx, wz)
+    robot_type: "holonomic"
+
+    # ─── 制御周期 ───
+    control_rate: 10.0        # cmd_vel パブリッシュ周期 [Hz]
+    planning_interval: 0.1    # サーバー問い合わせ間隔 [s]
+
+    # ─── トピック名 ───
+    rgb_topic: "/camera/color/image_raw"
+    depth_topic: "/camera/depth/image_raw"
+    camera_info_topic: "/camera/color/camera_info"
+    cmd_vel_topic: "cmd_vel"
