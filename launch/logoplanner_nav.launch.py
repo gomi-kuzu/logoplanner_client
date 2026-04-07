@@ -13,7 +13,7 @@ def generate_launch_description():
                               description='LoGoPlanner サーバーのポート番号'),
         DeclareLaunchArgument('server_type', default_value='realworld',
                               description='サーバータイプ: realworld (cmd_list) / simulation (trajectory)'),
-        DeclareLaunchArgument('goal_x', default_value='1.0',
+        DeclareLaunchArgument('goal_x', default_value='0.0',
                               description='ゴール座標 x [m] (ロボット前方が +x)'),
         DeclareLaunchArgument('goal_y', default_value='0.0',
                               description='ゴール座標 y [m] (ロボット左方が +y)'),

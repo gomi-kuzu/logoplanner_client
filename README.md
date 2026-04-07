@@ -107,8 +107,8 @@ ros2 action send_goal /navigate_to_goal logoplanner_client/action/NavigateToGoal
 | `server_host` | `localhost` | LoGoPlanner サーバーの IP |
 | `server_port` | `19999` | サーバーのポート番号 |
 | `server_type` | `realworld` | `realworld` (cmd_list) / `simulation` (trajectory) |
-| `goal_x` | `1.0` | ゴール x [m] (前方が +x) |
-| `goal_y` | `0.0` | ゴール y [m] (左が +y) |
+| `goal_x` | `0.0` | ゴール x [m] (前方が +x) ※Actionで上書き推奨 |
+| `goal_y` | `0.0` | ゴール y [m] (左が +y) ※Actionで上書き推奨 |
 | `stop_threshold` | `-3.0` | critic value がこれ以下で停止 |
 | `kp_v` | `1.0` | 線速度ゲイン |
 | `kp_w` | `1.0` | 横ずれ→角速度ゲイン |
@@ -148,7 +148,11 @@ omega = kp_w * dy + kp_theta * dtheta
 
 ## 注意事項
 
+- **アクションでの使用を推奨**: `goal_x`/`goal_y` パラメータはAction未使用時の初期値のみ。実運用では `/navigate_to_goal` アクションでゴールを動的に設定
 - `trajectory` はロボット座標系での **累積変位** (速度ではない)
-- 深度画像は astra_camera の 16UC1 (mm) → LoGoPlanner の m×10000 に自動変換
-- サーバーの推論に時間がかかる場合でも、制御タイマーは前回の trajectory を使い回して一定周期で cmd_vel を送出
+- **深度画像のスケール**:
+  - `realworld` モード: astra_camera の 16UC1 (mm) をそのまま送信
+  - `simulation` モード: mm × 10 にスケール変換して送信
+- サーバーの推論に時間がかかる場合でも、制御タイマーは前回の軌跡を使い回して一定周期で cmd_vel を送出
+- MultiThreadedExecutor を使用し、アクション実行中も制御タイマーが並行動作
 - ゴール到達後は自動的に停止コマンドを送出

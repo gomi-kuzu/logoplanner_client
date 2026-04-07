@@ -11,7 +11,7 @@ logoplanner_nav_node:
     server_type: "realworld"
 
     # ─── ゴール座標 (ロボット座標系 [m]) ───
-    goal_x: 1.0
+    goal_x: 0.0
     goal_y: 0.0
 
     # ─── 停止判定 ───
