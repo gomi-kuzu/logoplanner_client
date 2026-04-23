@@ -109,7 +109,7 @@ class LogoPlannerNavNode(Node):
         self._lock = threading.Lock()
 
         # 最新の画像データ (保護対象)
-        self._latest_rgb: Optional[np.ndarray] = None      # BGR uint8
+        self._latest_rgb: Optional[np.ndarray] = None      # RGB uint8
         self._latest_depth: Optional[np.ndarray] = None    # uint16 [mm]
         self._camera_intrinsic: Optional[np.ndarray] = None
 
@@ -264,17 +264,19 @@ class LogoPlannerNavNode(Node):
     #  サブスクライバコールバック
     # ================================================================
     def _rgb_callback(self, msg: Image) -> None:
-        """RGB 画像を受信して内部バッファに保存."""
+        """RGB 画像を受信して内部バッファに保存 (RGB形式)."""
         try:
             img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
-            # rgb8 → bgr8 (OpenCV形式)
+            # サーバーはRGB順序を要求するため、RGB形式で保存
             if msg.encoding == 'rgb8':
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                # rgb8 はそのまま
+                pass
+            elif msg.encoding == 'bgr8':
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             elif msg.encoding == 'bgra8':
-                img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+                img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
             elif msg.encoding == 'rgba8':
-                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-            # bgr8 はそのまま
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
             with self._lock:
                 self._latest_rgb = img
         except Exception as e:
@@ -355,7 +357,7 @@ class LogoPlannerNavNode(Node):
         Parameters
         ----------
         rgb : np.ndarray
-            BGR uint8 画像 (H, W, 3)
+            RGB uint8 画像 (H, W, 3)
         depth : np.ndarray
             深度 uint16 画像 (H, W) [mm]
 
@@ -367,7 +369,9 @@ class LogoPlannerNavNode(Node):
         url = f'{self._base_url}/pointgoal_step'
 
         # --- RGB → JPEG bytes ---
-        _, rgb_encoded = cv2.imencode('.jpg', rgb)
+        # cv2.imencode はデフォルトでBGR想定のため、RGB→BGRに変換してエンコード
+        rgb_bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        _, rgb_encoded = cv2.imencode('.jpg', rgb_bgr)
         rgb_bytes = io.BytesIO(rgb_encoded.tobytes())
 
         # --- Depth → PNG bytes ---
