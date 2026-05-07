@@ -1,0 +1,61 @@
+# LoGoPlanner Navigation Node - RealSense D435 カメラ設定
+#
+# 使用方法:
+#   ros2 launch logoplanner_client logoplanner_nav.launch.py params_file:=params_realsense_d435.yaml
+# または:
+#   ros2 run logoplanner_client logoplanner_nav_node --ros-args --params-file config/params_realsense_d435.yaml
+#
+# RealSense起動コマンド例:
+#   デフォルト (848x480 depth, 640x480 color):
+#     ros2 launch realsense2_camera rs_launch.py
+#   640x480に統一する場合:
+#     ros2 launch realsense2_camera rs_launch.py \
+#       depth_module.depth_profile:=640x480x30 \
+#       rgb_camera.color_profile:=640x480x30
+
+logoplanner_nav_node:
+  ros__parameters:
+    # ─── サーバー接続 ───
+    server_host: "localhost"
+    server_port: 19999
+
+    # ─── サーバータイプ ───
+    # "realworld"   : logoplanner_realworld_server (MPC計算済みの cmd_list を返す)
+    # "simulation"  : logoplanner_server (trajectory を返す、クライアント側でP制御)
+    server_type: "realworld"
+
+    # ─── ゴール座標 (ロボット座標系 [m]) ───
+    goal_x: 0.0
+    goal_y: 0.0
+
+    # ─── 停止判定 ───
+    stop_threshold: -3.0
+
+    # ─── P制御ゲイン ───
+    kp_v: 1.0        # 線速度 (dx → vx)
+    kp_w: 1.0        # 横ずれ (dy → vy or omega)
+    kp_theta: 1.0    # 角度差 (dtheta → omega)
+
+    # ─── 速度リミット [m/s, rad/s] ───
+    max_linear_x: 0.5
+    max_linear_y: 0.5
+    max_angular_z: 1.0
+
+    # ─── ロボットタイプ ───
+    # "holonomic"    : メカナム等の全方位 (vx, vy, wz)
+    # "differential" : 差動二輪 (vx, wz)
+    robot_type: "holonomic"
+
+    # ─── 制御周期 ───
+    control_rate: 10.0        # cmd_vel パブリッシュ周期 [Hz]
+    planning_interval: 0.1    # サーバー問い合わせ間隔 [s]
+
+    # ─── RealSense D435 カメラトピック ───
+    # realsense2_camera パッケージのデフォルトトピック名
+    # ネームスペースが二重になっている点に注意
+    rgb_topic: "/camera/camera/color/image_raw"
+    depth_topic: "/camera/camera/depth/image_rect_raw"
+    camera_info_topic: "/camera/camera/color/camera_info"
+    
+    # ─── cmd_vel トピック ───
+    cmd_vel_topic: "cmd_vel"

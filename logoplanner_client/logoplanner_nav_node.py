@@ -76,6 +76,11 @@ class LogoPlannerNavNode(Node):
         self.declare_parameter('planning_interval', 0.1)
 
         # カメラトピック名
+        # Astra Pro のデフォルト設定
+        # RealSense D435 の場合:
+        #   rgb_topic: /camera/camera/color/image_raw
+        #   depth_topic: /camera/camera/depth/image_rect_raw
+        #   camera_info_topic: /camera/camera/color/camera_info
         self.declare_parameter('rgb_topic', '/camera/color/image_raw')
         self.declare_parameter('depth_topic', '/camera/depth/image_raw')
         self.declare_parameter('camera_info_topic', '/camera/color/camera_info')

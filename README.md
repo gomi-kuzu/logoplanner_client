@@ -47,18 +47,51 @@ source install/setup.bash
 
 ### 1. カメラノード起動
 
+**Astra Pro の場合:**
 ```bash
 ros2 launch astra_camera astra_pro.launch.xml
 ```
 
+**RealSense D435 の場合:**
+```bash
+# デフォルト解像度（848x480 depth, 640x480 color）
+ros2 launch realsense2_camera rs_launch.py
+
+# 640x480に統一する場合
+ros2 launch realsense2_camera rs_launch.py \
+  depth_module.depth_profile:=640x480x30 \
+  rgb_camera.color_profile:=640x480x30
+```
+
 ### 2. LoGoPlanner ナビゲーションノード起動
 
+**デフォルト設定（Astra Pro）で起動:**
 ```bash
-# デフォルト設定 (localhost) で起動
 ros2 launch logoplanner_client logoplanner_nav.launch.py
+```
 
-# サーバーIPを指定する場合
+**RealSense D435 用の設定で起動:**
+```bash
+ros2 launch logoplanner_client logoplanner_nav.launch.py \
+  params_file:=src/logoplanner_client/config/params_realsense_d435.yaml
+```
+
+**サーバーIPを指定する場合:**
+```bash
 ros2 launch logoplanner_client logoplanner_nav.launch.py server_host:=192.168.1.100
+
+# RealSense + リモートサーバー
+ros2 launch logoplanner_client logoplanner_nav.launch.py \
+  params_file:=src/logoplanner_client/config/params_realsense_d435.yaml \
+  server_host:=192.168.1.100
+```
+
+**個別パラメータを上書きする場合:**
+```bash
+ros2 launch logoplanner_client logoplanner_nav.launch.py \
+  rgb_topic:=/camera/camera/color/image_raw \
+  depth_topic:=/camera/camera/depth/image_rect_raw \
+  camera_info_topic:=/camera/camera/color/camera_info
 ```
 
 ### 3. ゴールを送信（Action）
