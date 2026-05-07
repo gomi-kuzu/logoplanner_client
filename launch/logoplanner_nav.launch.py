@@ -29,6 +29,12 @@ def generate_launch_description():
                               description='深度画像トピック'),
         DeclareLaunchArgument('camera_info_topic', default_value='/camera/color/camera_info',
                               description='CameraInfo トピック'),
+        DeclareLaunchArgument('stop_and_go', default_value='false',
+                              description='Stop-and-Go モード ON/OFF (realworld モード専用)'),
+        DeclareLaunchArgument('stop_and_go_steps', default_value='5',
+                              description='1推論あたりの実行ステップ数'),
+        DeclareLaunchArgument('stop_wait_time', default_value='0.3',
+                              description='推論前の停止待機時間 [s]'),
 
         # ─── ノード起動 ───
         Node(
@@ -48,6 +54,9 @@ def generate_launch_description():
                 'rgb_topic': LaunchConfiguration('rgb_topic'),
                 'depth_topic': LaunchConfiguration('depth_topic'),
                 'camera_info_topic': LaunchConfiguration('camera_info_topic'),
+                'stop_and_go': LaunchConfiguration('stop_and_go'),
+                'stop_and_go_steps': LaunchConfiguration('stop_and_go_steps'),
+                'stop_wait_time': LaunchConfiguration('stop_wait_time'),
             }],
         ),
     ])

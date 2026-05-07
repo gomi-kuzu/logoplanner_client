@@ -679,9 +679,13 @@ def main(args=None):
         pass
     finally:
         # 停止コマンドを送出してからシャットダウン
-        stop_twist = Twist()
-        node._cmd_pub.publish(stop_twist)
-        node.get_logger().info('Shutting down, sending stop command.')
+        # rclpy.shutdown()後はpublishできないため、shutdown前に実施
+        try:
+            stop_twist = Twist()
+            node._cmd_pub.publish(stop_twist)
+            node.get_logger().info('Shutting down, sending stop command.')
+        except Exception:
+            pass
         executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
