@@ -75,6 +75,14 @@ class LogoPlannerNavNode(Node):
         # 計画ループの sleep [s]
         self.declare_parameter('planning_interval', 0.1)
 
+        # Stop-and-Go モード (realworld モード専用)
+        # True にすると: 推論前にロボットを停止 → 推論 → N ステップ実行 → 繰り返し
+        self.declare_parameter('stop_and_go', False)
+        # 1推論あたりに実行する cmd_list のステップ数
+        self.declare_parameter('stop_and_go_steps', 5)
+        # 停止コマンド送出後、ロボットが実際に止まるまでの待機時間 [s]
+        self.declare_parameter('stop_wait_time', 0.3)
+
         # カメラトピック名
         # Astra Pro のデフォルト設定
         # RealSense D435 の場合:
@@ -109,6 +117,9 @@ class LogoPlannerNavNode(Node):
         self._robot_type: str = self.get_parameter('robot_type').value
         self._control_rate: float = self.get_parameter('control_rate').value
         self._planning_interval: float = self.get_parameter('planning_interval').value
+        self._stop_and_go: bool = self.get_parameter('stop_and_go').value
+        self._stop_and_go_steps: int = self.get_parameter('stop_and_go_steps').value
+        self._stop_wait_time: float = self.get_parameter('stop_wait_time').value
 
         # ─── 内部状態 ───
         self._lock = threading.Lock()
@@ -128,6 +139,8 @@ class LogoPlannerNavNode(Node):
 
         self._reached_goal: bool = False
         self._server_initialized: bool = False
+        # Stop-and-Go: True の間は制御タイマーがゼロ速度を publish する
+        self._stop_for_inference: bool = False
         self._start_time: Optional[float] = None  # ナビゲーション開始時刻
         self._action_active: bool = False  # アクション実行中フラグ
 
@@ -162,11 +175,16 @@ class LogoPlannerNavNode(Node):
         self._planning_thread = threading.Thread(target=self._planning_loop, daemon=True)
         self._planning_thread.start()
 
+        sag_info = (
+            f'stop_and_go=ON (steps={self._stop_and_go_steps}, wait={self._stop_wait_time}s)'
+            if self._stop_and_go else 'stop_and_go=OFF'
+        )
         self.get_logger().info(
             f'LoGoPlanner Nav Node started  '
             f'server={self._server_host}:{self._server_port}  '
             f'server_type={self._server_type}  '
             f'robot_type={self._robot_type}  '
+            f'{sag_info}  '
             f'Action server: /navigate_to_goal'
         )
 
@@ -462,6 +480,12 @@ class LogoPlannerNavNode(Node):
                 time.sleep(0.1)
                 continue
 
+            # Stop-and-Go: 問い合わせ前にロボットを停止
+            if self._stop_and_go and self._server_type == 'realworld':
+                with self._lock:
+                    self._stop_for_inference = True
+                time.sleep(self._stop_wait_time)
+
             # サーバー問い合わせ
             with self._lock:
                 current_goal_x = self._goal_x
@@ -481,8 +505,29 @@ class LogoPlannerNavNode(Node):
                     with self._lock:
                         self._cmd_list = cmd_list
                         self._cmd_index = 0
+                        self._stop_for_inference = False  # 実行再開
                     self.get_logger().debug(
                         f'Received cmd_list: {len(cmd_list)} commands')
+
+                    if self._stop_and_go:
+                        # Stop-and-Go: N ステップ消費完了まで待ってから次の推論へ
+                        target_steps = min(self._stop_and_go_steps, len(cmd_list))
+                        self.get_logger().debug(
+                            f'[Stop-and-Go] Executing {target_steps} steps...')
+                        while rclpy.ok():
+                            with self._lock:
+                                idx = self._cmd_index
+                                reached = self._reached_goal
+                            if reached or idx >= target_steps:
+                                break
+                            time.sleep(0.02)
+                        # ステップ実行完了 → 次の推論のために停止
+                        with self._lock:
+                            self._stop_for_inference = True
+                        self.get_logger().debug(
+                            f'[Stop-and-Go] Stopping for next inference...')
+                        time.sleep(self._stop_wait_time)
+                        continue  # planning_interval を挟まずすぐ次の推論へ
                 else:
                     self.get_logger().warn(
                         f'realworld mode but response has no cmd_list. '
@@ -523,6 +568,7 @@ class LogoPlannerNavNode(Node):
         cmd_list は [vx, vy, wz(deg/s)] のリスト。
         制御タイマーの各 tick で 1 コマンドずつ消費する。
         全コマンド消費後は最後のコマンドを保持（次の cmd_list 到着まで）。
+        Stop-and-Go モード時は _stop_for_inference=True の間ゼロ速度を送出。
         """
         twist = Twist()
 
@@ -530,8 +576,16 @@ class LogoPlannerNavNode(Node):
             cmd_list = self._cmd_list
             cmd_idx = self._cmd_index
             reached = self._reached_goal
+            stop_for_inference = self._stop_for_inference
 
-        if cmd_list is None or reached:
+        # 推論待ち停止 or ゴール到達 → ゼロ速度
+        if stop_for_inference or reached:
+            self._cmd_pub.publish(twist)
+            if stop_for_inference:
+                self.get_logger().debug('[Stop-and-Go] Holding stop for inference...')
+            return
+
+        if cmd_list is None:
             self._cmd_pub.publish(twist)
             return
 
