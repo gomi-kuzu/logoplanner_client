@@ -521,13 +521,9 @@ class LogoPlannerNavNode(Node):
                             if reached or idx >= target_steps:
                                 break
                             time.sleep(0.02)
-                        # ステップ実行完了 → 次の推論のために停止
-                        with self._lock:
-                            self._stop_for_inference = True
-                        self.get_logger().debug(
-                            f'[Stop-and-Go] Stopping for next inference...')
-                        time.sleep(self._stop_wait_time)
-                        continue  # planning_interval を挟まずすぐ次の推論へ
+                        # ステップ実行完了 → ループ先頭で stop_wait_time 待機してから次の推論へ
+                        # (ループ先頭の stop_and_go ブロックが停止・待機を担うため、ここでは continue のみ)
+                        continue  # planning_interval を挟まずすぐ次のループへ
                 else:
                     self.get_logger().warn(
                         f'realworld mode but response has no cmd_list. '
